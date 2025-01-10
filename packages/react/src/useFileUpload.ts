@@ -1,28 +1,26 @@
-import { InterpreterFrom } from 'xstate'
-
 import {
   createFileUploadMachine,
   FileItemRef,
   FileUploadMachine,
   FileUploadState,
-  StorageUploadParams,
+  StorageUploadFileParams,
   UploadFileHandlerResult,
   uploadFilePromise
-} from '@nhost/hasura-storage-js'
+} from '@nhost/nhost-js'
 import { useInterpret, useSelector } from '@xstate/react'
-
+import { InterpreterFrom } from 'xstate'
 import { useNhostClient } from './useNhostClient'
 
 export interface FileUploadHookResult extends FileUploadState {
   /**
    * Add the file without uploading it.
    */
-  add: (params: StorageUploadParams) => void
+  add: (params: StorageUploadFileParams) => void
 
   /**
    * Upload the file given as a parameter, or that has been previously added.
    */
-  upload: (params: Partial<StorageUploadParams>) => Promise<UploadFileHandlerResult>
+  upload: (params: Partial<StorageUploadFileParams>) => Promise<UploadFileHandlerResult>
 
   /**
    * Cancel the ongoing upload.
@@ -63,7 +61,7 @@ export const useFileUploadItem = (
 ): FileUploadHookResult => {
   const nhost = useNhostClient()
 
-  const add = (params: StorageUploadParams) => {
+  const add = (params: StorageUploadFileParams) => {
     ref.send({
       type: 'ADD',
       file: params.file,
@@ -71,13 +69,16 @@ export const useFileUploadItem = (
     })
   }
 
-  const upload = (params: Partial<StorageUploadParams>) =>
-    uploadFilePromise(nhost, ref, {
-      file: params.file,
-      bucketId: params.bucketId || bucketId,
-      id,
-      name
-    })
+  const upload = (params: Partial<StorageUploadFileParams>) =>
+    uploadFilePromise(
+      {
+        url: nhost.storage.url,
+        accessToken: nhost.auth.getAccessToken(),
+        adminSecret: nhost.adminSecret,
+        ...params
+      },
+      ref
+    )
 
   const cancel = () => {
     ref.send('CANCEL')
