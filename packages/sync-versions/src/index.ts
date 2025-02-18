@@ -1,12 +1,10 @@
 #!/usr/bin/env node
+import { findWorkspaceDir } from '@pnpm/find-workspace-dir'
 import fs from 'fs'
-import path from 'path'
-
-import glob from 'glob'
+import { globSync } from 'glob'
 import { set } from 'object-path'
+import path from 'path'
 import yaml from 'yaml'
-
-import findWorkspaceRoot from '@pnpm/find-workspace-dir'
 
 interface NhostCloudConfig {
   hasura: string
@@ -15,13 +13,13 @@ interface NhostCloudConfig {
 }
 
 const main = async () => {
-  const root = await findWorkspaceRoot(process.cwd())
+  const root = await findWorkspaceDir(process.cwd())
 
   const { hasura, auth, storage }: NhostCloudConfig = yaml.parse(
     fs.readFileSync(path.join(root!, 'nhost-cloud.yaml'), 'utf-8')
   )
 
-  const nhostConfigs = glob.sync('**/nhost/config.yaml', {
+  const nhostConfigs = globSync('**/nhost/config.yaml', {
     cwd: root,
     absolute: true,
     realpath: true
@@ -31,9 +29,9 @@ const main = async () => {
     const rawInitial = fs.readFileSync(file, 'utf8')
     const doc = yaml.parse(rawInitial)
 
-    set(doc, 'services.hasura.version', hasura)
-    set(doc, 'services.auth.version', auth)
-    set(doc, 'services.storage.version', storage)
+    set(doc, 'services.hasura.image', `hasura/graphql-engine:${hasura}`)
+    set(doc, 'services.auth.image', `nhost/hasura-auth:${auth}`)
+    set(doc, 'services.storage.image', `nhost/hasura-storage:${storage}`)
     const rawModified = yaml.stringify(doc, { singleQuote: true })
     fs.writeFileSync(file, rawModified)
     if (rawInitial !== rawModified) {

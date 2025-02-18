@@ -1,15 +1,9 @@
 metadata_directory: metadata
 services:
-  mailhog:
-    port: 8025
   hasura:
-    version: v2.10.1
     environment:
       hasura_graphql_enable_remote_schema_permissions: false
-  auth:
-    version: 0.10.0
-  storage:
-    version: 0.2.3
+    image: hasura/graphql-engine:v2.15.2
   minio:
     environment:
       minio_root_password: minioaccesskey123123
@@ -18,7 +12,14 @@ services:
     environment:
       postgres_password: postgres
       postgres_user: postgres
+  auth:
+    image: nhost/hasura-auth:0.16.2
+  storage:
+    image: nhost/hasura-storage:0.3.0
 auth:
+  webauthn:
+    enabled: true
+    rp_name: URQL
   access_control:
     email:
       allowed_email_domains: ''
@@ -28,13 +29,13 @@ auth:
     url:
       allowed_redirect_urls: ''
   anonymous_users_enabled: false
-  client_url: http://localhost:3000
+  client_url: http://localhost:5173
   disable_new_users: false
   email:
     enabled: false
     passwordless:
-      enabled: false
-    signin_email_verified_required: true
+      enabled: true
+    signin_email_verified_required: false
     template_fetch_url: ''
   gravatar:
     default: ''
@@ -120,18 +121,14 @@ auth:
         from: ''
         messaging_service_id: ''
   smtp:
-    host: nhost_mailhog
+    host: mailhog
     method: ''
     pass: password
-    port: 1706
+    port: 1025
     secure: false
     sender: hasura-auth@example.com
     user: user
-  token:
-    access:
-      expires_in: 900
-    refresh:
-      expires_in: 43200
+  access_token_expires_in: 315
   user:
     allowed_roles: user,me
     default_allowed_roles: user,me
